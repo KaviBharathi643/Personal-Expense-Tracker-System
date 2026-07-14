@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spendy — Personal Expense Tracker</title>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons (CDN) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Toast Notification System -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <i data-lucide="wallet"></i>
+        </div>
+        <div>
+          <h1>Spendy</h1>
+          <p class="subtitle">Personal Finance Companion</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="status-indicator">
+          <span class="status-dot"></span> Online
+        </span>
+      </div>
+    </header>
+
+    <!-- Metrics / Cards Section -->
+    <section class="metrics-grid">
+      <div class="metric-card main-card">
+        <div class="card-header">
+          <span>Total Expenses</span>
+          <i data-lucide="trending-up" class="text-primary"></i>
+        </div>
+        <div class="card-value" id="total-spent">$0.00</div>
+        <div class="card-footer">
+          <span class="trend-up" id="transaction-count">0 transactions</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="card-header">
+          <span>Top Category</span>
+          <i data-lucide="pie-chart" class="text-accent"></i>
+        </div>
+        <div class="card-value" id="top-category">—</div>
+        <div class="card-footer" id="top-category-amount">$0.00 spent</div>
+      </div>
+
+      <div class="metric-card chart-card">
+        <div class="card-header">
+          <span>Category Breakdown</span>
+          <i data-lucide="donut" class="text-success"></i>
+        </div>
+        <div class="mini-chart-container">
+          <canvas id="category-chart" width="120" height="120"></canvas>
+          <div class="chart-legend" id="chart-legend">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Layout -->
+    <main class="main-content">
+      
+      <!-- Left Side: Form -->
+      <section class="form-section">
+        <div class="panel-card">
+          <h2 id="form-title">Add Expense</h2>
+          <p class="panel-subtitle">Log your spending details below</p>
+          
+          <form id="expense-form" novalidate>
+            <input type="hidden" id="expense-id">
+            
+            <div class="form-group">
+              <label for="expense-description">Description</label>
+              <div class="input-wrapper">
+                <i data-lucide="file-text" class="input-icon"></i>
+                <input type="text" id="expense-description" placeholder="e.g. Weekly Grocery Run" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="expense-amount">Amount ($)</label>
+                <div class="input-wrapper">
+                  <i data-lucide="dollar-sign" class="input-icon"></i>
+                  <input type="number" id="expense-amount" placeholder="0.00" step="0.01" min="0.01" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="expense-category">Category</label>
+                <div class="input-wrapper">
+                  <i data-lucide="tag" class="input-icon"></i>
+                  <select id="expense-category" required>
+                    <option value="" disabled selected>Select category</option>
+                    <option value="Food">Food & Dining</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Utilities">Utilities & Bills</option>
+                    <option value="Transport">Transportation</option>
+                    <option value="Health">Health & Fitness</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="expense-date">Date</label>
+              <div class="input-wrapper">
+                <i data-lucide="calendar" class="input-icon"></i>
+                <input type="date" id="expense-date" required>
+              </div>
+            </div>
+
+            <div class="button-group">
+              <button type="submit" id="submit-btn" class="btn btn-primary">
+                <i data-lucide="plus-circle"></i> Save Expense
+              </button>
+              <button type="button" id="cancel-btn" class="btn btn-secondary hidden">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Right Side: Transactions Feed -->
+      <section class="list-section">
+        <div class="panel-card feed-card">
+          <div class="feed-header">
+            <div>
+              <h2>Transactions</h2>
+              <p class="panel-subtitle" id="feed-subtitle">Showing all transactions</p>
+            </div>
+            
+            <div class="feed-controls">
+              <div class="filter-wrapper">
+                <label for="filter-category" class="sr-only">Filter Category</label>
+                <select id="filter-category" class="select-sm">
+                  <option value="All">All Categories</option>
+                  <option value="Food">Food & Dining</option>
+                  <option value="Shopping">Shopping</option>
+                  <option value="Entertainment">Entertainment</option>
+                  <option value="Utilities">Utilities & Bills</option>
+                  <option value="Transport">Transportation</option>
+                  <option value="Health">Health & Fitness</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="sort-wrapper">
+                <label for="sort-by" class="sr-only">Sort By</label>
+                <select id="sort-by" class="select-sm">
+                  <option value="date-desc">Newest First</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="amount-desc">Highest Amount</option>
+                  <option value="amount-asc">Lowest Amount</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Expenses List Container -->
+          <div class="transactions-list" id="transactions-list">
+            <!-- Dynamically populated via Javascript -->
+            <div class="empty-state">
+              <div class="empty-icon"><i data-lucide="inbox"></i></div>
+              <p>No transactions logged yet. Start by filling the form!</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="app-footer-nav">
+      <p>&copy; 2026 Spendy Expense Tracker. Powered by clean Node.js and premium Vanilla CSS.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Initialize Lucide icons on page load
+    lucide.createIcons();
+  </script>
+</body>
+</html>

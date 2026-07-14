@@ -1,0 +1,18 @@
+# Dependency directory
+node_modules/
+
+# Local databases/data files (keep initial data directory structure clean)
+data/expenses.json
+
+# Environment variables
+.env
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS metadata
+.DS_Store
+Thumbs.db
