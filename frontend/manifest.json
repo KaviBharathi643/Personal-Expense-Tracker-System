@@ -1,0 +1,22 @@
+{
+  "name": "Aware Expense Workspace",
+  "short_name": "Aware",
+  "description": "An intelligent PWA workspace for tracking personal finance with folders and files.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9ff",
+  "theme_color": "#002626",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

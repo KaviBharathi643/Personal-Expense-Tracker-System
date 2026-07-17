@@ -1,85 +1,203 @@
-const fs = require('fs');
-const path = require('path');
+const mysql = require('mysql2/promise');
+const crypto = require('crypto');
 
-const DATA_DIR = path.join(__dirname, '../data');
-const DATA_FILE = path.join(DATA_DIR, 'expenses.json');
+// Create the connection pool
+const pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: 'ihtarahbivaK@103535',
+  database: 'aware_tracker',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
-// Ensure database directory and file exist
-function initializeDatabase() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2), 'utf8');
-  }
+// Helper for raw queries
+async function query(sql, params) {
+  const [results] = await pool.execute(sql, params);
+  return results;
 }
 
-// Load all expenses
-function getExpenses() {
-  initializeDatabase();
-  try {
-    const data = fs.readFileSync(DATA_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error reading database file, returning empty list:', error);
-    return [];
+// --- Auth queries ---
+async function createUser(name, email, passwordHash) {
+  const id = crypto.randomUUID();
+  await query(
+    'INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)',
+    [id, name, email, passwordHash]
+  );
+  return { id, name, email };
+}
+
+async function getUserByEmail(email) {
+  const rows = await query('SELECT * FROM users WHERE email = ?', [email]);
+  return rows[0] || null;
+}
+
+async function saveResetToken(email, token, expiry) {
+  await query(
+    'UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?',
+    [token, expiry, email]
+  );
+}
+
+async function getUserByResetToken(token) {
+  const rows = await query(
+    'SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > NOW()',
+    [token]
+  );
+  return rows[0] || null;
+}
+
+async function updatePassword(userId, passwordHash) {
+  await query(
+    'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
+    [passwordHash, userId]
+  );
+}
+
+// --- Folders API CRUD ---
+async function getFolders(userId) {
+  return await query('SELECT * FROM folders WHERE user_id = ? ORDER BY created_at ASC', [userId]);
+}
+
+async function saveFolder(folderData, userId) {
+  const id = folderData.id || crypto.randomUUID();
+  const walletLimit = folderData.walletLimit !== undefined ? (folderData.walletLimit === null || folderData.walletLimit === '' ? null : parseFloat(folderData.walletLimit)) : null;
+
+  if (folderData.id) {
+    // Update
+    await query(
+      'UPDATE folders SET name = ?, wallet_limit = ? WHERE id = ? AND user_id = ?',
+      [folderData.name, walletLimit, id, userId]
+    );
+  } else {
+    // Insert
+    await query(
+      'INSERT INTO folders (id, user_id, name, wallet_limit) VALUES (?, ?, ?, ?)',
+      [id, userId, folderData.name, walletLimit]
+    );
   }
+  return { id, name: folderData.name, walletLimit };
 }
 
-// Save all expenses helper
-function saveAllExpenses(expenses) {
-  initializeDatabase();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(expenses, null, 2), 'utf8');
+async function deleteFolder(id, userId) {
+  const res = await query('DELETE FROM folders WHERE id = ? AND user_id = ?', [id, userId]);
+  return res.affectedRows > 0;
 }
 
-// Add or update an expense
-function saveExpense(expenseData) {
-  const expenses = getExpenses();
-  
-  const newExpense = {
-    id: expenseData.id || Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-    description: expenseData.description || 'Untitled Expense',
-    amount: parseFloat(expenseData.amount) || 0,
-    category: expenseData.category || 'Other',
-    date: expenseData.date || new Date().toISOString().split('T')[0]
-  };
+// --- Files API CRUD ---
+async function getFiles(userId) {
+  return await query('SELECT * FROM files WHERE user_id = ? ORDER BY created_at ASC', [userId]);
+}
 
-  if (expenseData.id) {
-    // Update existing
-    const index = expenses.findIndex(e => e.id === expenseData.id);
-    if (index !== -1) {
-      expenses[index] = newExpense;
-    } else {
-      expenses.push(newExpense);
+async function saveFile(fileData, userId) {
+  const id = fileData.id || crypto.randomUUID();
+  const folderId = fileData.folderId || null;
+  const walletLimit = fileData.walletLimit !== undefined ? (fileData.walletLimit === null || fileData.walletLimit === '' ? null : parseFloat(fileData.walletLimit)) : null;
+
+  if (fileData.id) {
+    // Update
+    await query(
+      'UPDATE files SET name = ?, folder_id = ?, wallet_limit = ? WHERE id = ? AND user_id = ?',
+      [fileData.name, folderId, walletLimit, id, userId]
+    );
+  } else {
+    // Insert
+    await query(
+      'INSERT INTO files (id, user_id, name, folder_id, wallet_limit) VALUES (?, ?, ?, ?, ?)',
+      [id, userId, fileData.name, folderId, walletLimit]
+    );
+  }
+  return { id, name: fileData.name, folderId, walletLimit };
+}
+
+async function deleteFile(id, userId) {
+  const res = await query('DELETE FROM files WHERE id = ? AND user_id = ?', [id, userId]);
+  return res.affectedRows > 0;
+}
+
+// --- Expenses API CRUD ---
+async function getExpenses(filters, userId) {
+  let sql = 'SELECT * FROM expenses WHERE user_id = ?';
+  const params = [userId];
+
+  if (filters.fileId) {
+    sql += ' AND file_id = ?';
+    params.push(filters.fileId);
+  } else if (filters.folderId) {
+    sql += ' AND file_id IN (SELECT id FROM files WHERE folder_id = ?)';
+    params.push(filters.folderId);
+  }
+
+  if (filters.category && filters.category !== 'All') {
+    sql += ' AND category = ?';
+    params.push(filters.category);
+  }
+
+  if (filters.sortBy) {
+    if (filters.sortBy === 'date-desc') {
+      sql += ' ORDER BY date DESC';
+    } else if (filters.sortBy === 'date-asc') {
+      sql += ' ORDER BY date ASC';
+    } else if (filters.sortBy === 'amount-desc') {
+      sql += ' ORDER BY amount DESC';
+    } else if (filters.sortBy === 'amount-asc') {
+      sql += ' ORDER BY amount ASC';
     }
   } else {
-    // Add new
-    expenses.push(newExpense);
+    sql += ' ORDER BY date DESC';
   }
 
-  saveAllExpenses(expenses);
-  return newExpense;
+  return await query(sql, params);
 }
 
-// Delete an expense
-function deleteExpense(id) {
-  const expenses = getExpenses();
-  const filtered = expenses.filter(e => e.id !== id);
-  if (expenses.length !== filtered.length) {
-    saveAllExpenses(filtered);
-    return true;
+async function saveExpense(expenseData, userId) {
+  const id = expenseData.id || crypto.randomUUID();
+  const description = expenseData.description || null;
+  const category = expenseData.category || 'Other';
+  const date = expenseData.date ? new Date(expenseData.date) : new Date();
+
+  if (expenseData.id) {
+    // Update
+    await query(
+      'UPDATE expenses SET file_id = ?, amount = ?, description = ?, category = ?, date = ? WHERE id = ? AND user_id = ?',
+      [expenseData.fileId, expenseData.amount, description, category, date, id, userId]
+    );
+  } else {
+    // Insert
+    await query(
+      'INSERT INTO expenses (id, user_id, file_id, amount, description, category, date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [id, userId, expenseData.fileId, expenseData.amount, description, category, date]
+    );
   }
-  return false;
+  return { id, fileId: expenseData.fileId, amount: expenseData.amount, description, category, date };
 }
 
-// Get expense summary stats
-function getSummary() {
-  const expenses = getExpenses();
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-  
+async function deleteExpense(id, userId) {
+  const res = await query('DELETE FROM expenses WHERE id = ? AND user_id = ?', [id, userId]);
+  return res.affectedRows > 0;
+}
+
+// --- Dashboard Summary Calculation ---
+async function getSummary(scopeType, scopeId, userId) {
+  let sql = 'SELECT * FROM expenses WHERE user_id = ?';
+  const params = [userId];
+
+  if (scopeType === 'file') {
+    sql += ' AND file_id = ?';
+    params.push(scopeId);
+  } else if (scopeType === 'folder') {
+    sql += ' AND file_id IN (SELECT id FROM files WHERE folder_id = ?)';
+    params.push(scopeId);
+  }
+
+  const expenses = await query(sql, params);
+  const total = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
   const categoryMap = {};
   expenses.forEach(e => {
-    categoryMap[e.category] = (categoryMap[e.category] || 0) + e.amount;
+    const cat = e.category || 'Other';
+    categoryMap[cat] = (categoryMap[cat] || 0) + parseFloat(e.amount);
   });
 
   const categoryBreakdown = Object.keys(categoryMap).map(cat => ({
@@ -96,6 +214,18 @@ function getSummary() {
 }
 
 module.exports = {
+  query,
+  createUser,
+  getUserByEmail,
+  saveResetToken,
+  getUserByResetToken,
+  updatePassword,
+  getFolders,
+  saveFolder,
+  deleteFolder,
+  getFiles,
+  saveFile,
+  deleteFile,
   getExpenses,
   saveExpense,
   deleteExpense,

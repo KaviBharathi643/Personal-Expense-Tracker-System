@@ -2,201 +2,553 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spendy — Personal Expense Tracker</title>
-  <!-- Google Fonts: Outfit & Inter -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aware — Personal Expense Tracker</title>
+  <meta name="description" content="Aware is a beautiful personal expense tracker with folders, files, wallet limits, and smart expense logging.">
+
+  <!-- Google Fonts: Inter + Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Lucide Icons (CDN) -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Material Symbols Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block" rel="stylesheet">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#FAF9F6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
 
-  <!-- Toast Notification System -->
+  <!-- Toast Container -->
   <div id="toast-container" class="toast-container"></div>
 
-  <div class="app-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="logo-area">
-        <div class="logo-icon">
-          <i data-lucide="wallet"></i>
+  <!-- ═══════════════════════════════════════════════════════
+       AUTH VIEW (Login / Register / Forgot Password)
+       ═══════════════════════════════════════════════════════ -->
+  <div id="view-auth" class="auth-view hidden">
+
+    <!-- Decorative background -->
+    <div class="auth-bg-pattern"></div>
+    <div class="auth-bg-orb auth-bg-orb-1"></div>
+    <div class="auth-bg-orb auth-bg-orb-2"></div>
+
+    <main class="auth-main">
+
+      <!-- Character Section -->
+      <div class="auth-character-section">
+        <div class="character-wrapper" id="character-container">
+          <img src="icon.png" alt="Aware Assistant">
+          <div class="welcome-bubble" id="welcome-bubble">Welcome back!</div>
         </div>
-        <div>
-          <h1>Spendy</h1>
-          <p class="subtitle">Personal Finance Companion</p>
+        <div class="text-center">
+          <h1 id="screen-title" class="auth-title">Aware Pro</h1>
+          <p id="screen-subtitle" class="auth-subtitle">Your intelligent expense assistant</p>
         </div>
       </div>
-      <div class="header-actions">
-        <span class="status-indicator">
-          <span class="status-dot"></span> Online
-        </span>
+
+      <!-- Auth Card -->
+      <div class="auth-card">
+
+        <!-- Auth Tabs -->
+        <div id="auth-tabs" class="auth-tabs">
+          <button onclick="switchAuthTab('login')" class="auth-tab-btn active" id="btn-tab-login">Sign In</button>
+          <button onclick="switchAuthTab('register')" class="auth-tab-btn" id="btn-tab-register">Sign Up</button>
+          <div id="tab-indicator" class="tab-indicator"></div>
+        </div>
+
+        <!-- Content Area for Forms -->
+        <div class="auth-form-area">
+
+          <!-- Sign In Form -->
+          <form id="form-login" class="state-transition active-state" onsubmit="handleLoginSubmit(event)">
+            <div class="form-group">
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">mail</span>
+                <input type="email" id="login-email" placeholder="Email Address" required class="form-input">
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">lock</span>
+                <input type="password" id="login-password" placeholder="Password" required class="form-input">
+              </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-md);">
+              <button type="button" onclick="switchAuthTab('forgot')" class="link-btn">Forgot Password?</button>
+            </div>
+            <button type="submit" class="btn btn-dark btn-full">Enter Aware</button>
+          </form>
+
+          <!-- Sign Up Form -->
+          <form id="form-register" class="state-transition hidden-state" onsubmit="handleRegisterSubmit(event)">
+            <div class="form-group">
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">person</span>
+                <input type="text" id="register-name" placeholder="Full Name" required class="form-input">
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">mail</span>
+                <input type="email" id="register-email" placeholder="Email Address" required class="form-input">
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">lock</span>
+                <input type="password" id="register-password" placeholder="Create Password" required class="form-input">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+          </form>
+
+          <!-- Forgot Password / OTP -->
+          <div id="form-forgot" class="state-transition hidden-state">
+            <div class="text-center" style="margin-bottom: var(--space-md);">
+              <p id="forgot-info-text" class="font-body-sm text-muted">Enter your email to receive a 6-digit secure OTP.</p>
+            </div>
+            <div class="form-group" id="forgot-email-wrapper">
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">verified_user</span>
+                <input type="email" id="forgot-email" placeholder="Verification Email" class="form-input">
+              </div>
+            </div>
+            <!-- OTP entry boxes -->
+            <div id="otp-wrapper" class="otp-wrapper hidden">
+              <input type="text" maxlength="1" class="otp-box">
+              <input type="text" maxlength="1" class="otp-box">
+              <input type="text" maxlength="1" class="otp-box">
+              <input type="text" maxlength="1" class="otp-box">
+              <input type="text" maxlength="1" class="otp-box">
+              <input type="text" maxlength="1" class="otp-box">
+            </div>
+            <!-- New Password -->
+            <div id="reset-password-wrapper" class="hidden" style="margin-top: var(--space-md);">
+              <div class="form-group">
+                <div class="input-with-icon">
+                  <span class="material-symbols-outlined input-icon">lock</span>
+                  <input type="password" id="forgot-new-password" placeholder="Enter New Password" class="form-input">
+                </div>
+              </div>
+            </div>
+            <button type="button" id="btn-forgot-action" onclick="handleForgotAction(event)" class="btn btn-primary btn-full" style="margin-top: var(--space-md);">
+              Send OTP
+            </button>
+            <div class="text-center" style="margin-top: var(--space-md);">
+              <button type="button" onclick="switchAuthTab('login')" class="link-btn">Return to Sign In</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="auth-footer">
+        <div class="auth-footer-icons">
+          <span class="material-symbols-outlined" style="font-size: 16px;">account_balance</span>
+          <span class="material-symbols-outlined" style="font-size: 16px;">trending_up</span>
+          <span class="material-symbols-outlined" style="font-size: 16px;">wallet</span>
+        </div>
+        <p class="auth-footer-text">v2.4.0 Encrypted Secure Node</p>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       WORKSPACE VIEW (Main App: Sidebar + Canvas)
+       ═══════════════════════════════════════════════════════ -->
+  <div id="view-workspace" class="workspace-view hidden">
+
+    <!-- Top Navigation Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn-icon menu-toggle-btn" onclick="toggleDrawer()">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <h1 class="topbar-logo">Aware</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="search-bar">
+          <span class="material-symbols-outlined" style="font-size: 18px; color: var(--text-muted);">search</span>
+          <input placeholder="Search entries..." type="text">
+        </div>
+        <div class="avatar-circle">
+          <span class="material-symbols-outlined">person</span>
+        </div>
       </div>
     </header>
 
-    <!-- Metrics / Cards Section -->
-    <section class="metrics-grid">
-      <div class="metric-card main-card">
-        <div class="card-header">
-          <span>Total Expenses</span>
-          <i data-lucide="trending-up" class="text-primary"></i>
-        </div>
-        <div class="card-value" id="total-spent">$0.00</div>
-        <div class="card-footer">
-          <span class="trend-up" id="transaction-count">0 transactions</span>
-        </div>
-      </div>
+    <div class="workspace-body">
 
-      <div class="metric-card">
-        <div class="card-header">
-          <span>Top Category</span>
-          <i data-lucide="pie-chart" class="text-accent"></i>
-        </div>
-        <div class="card-value" id="top-category">—</div>
-        <div class="card-footer" id="top-category-amount">$0.00 spent</div>
-      </div>
+      <!-- Sidebar Overlay (mobile) -->
+      <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleDrawer()"></div>
 
-      <div class="metric-card chart-card">
-        <div class="card-header">
-          <span>Category Breakdown</span>
-          <i data-lucide="donut" class="text-success"></i>
+      <!-- Sidebar Navigation Drawer -->
+      <aside class="sidebar custom-scrollbar" id="main-drawer">
+        <div class="sidebar-header">
+          <div class="sidebar-brand">
+            <span class="material-symbols-outlined sidebar-brand-icon">account_balance_wallet</span>
+            <span class="sidebar-brand-text">Aware</span>
+          </div>
+          <button class="btn-icon sidebar-close-btn" onclick="toggleDrawer()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
         </div>
-        <div class="mini-chart-container">
-          <canvas id="category-chart" width="120" height="120"></canvas>
-          <div class="chart-legend" id="chart-legend">
-            <!-- Dynamically populated -->
+
+        <div class="sidebar-body custom-scrollbar">
+          <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-lg);">
+            <button onclick="openFolderModal()" class="btn btn-dark btn-sm" style="flex: 1;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">create_new_folder</span>
+              Folder
+            </button>
+            <button onclick="openFileModal(null)" class="btn btn-outline btn-sm" style="flex: 1;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">note_add</span>
+              File
+            </button>
+          </div>
+
+          <!-- Dynamic Folder/File Tree -->
+          <nav class="folder-tree" id="sidebar-folder-tree">
+            <!-- Dynamically populated by JS -->
+          </nav>
+        </div>
+
+        <!-- Profile Footer -->
+        <div class="sidebar-footer">
+          <div class="profile-footer">
+            <div class="avatar-circle">
+              <span class="material-symbols-outlined">person</span>
+            </div>
+            <div class="profile-info">
+              <p class="profile-name" id="user-profile-name">User</p>
+              <p class="profile-email" id="user-profile-email">email@aware.app</p>
+            </div>
+            <button onclick="handleLogout()" class="logout-btn" title="Logout">
+              <span class="material-symbols-outlined">logout</span>
+            </button>
           </div>
         </div>
-      </div>
-    </section>
+      </aside>
 
-    <!-- Main Workspace Layout -->
-    <main class="main-content">
-      
-      <!-- Left Side: Form -->
-      <section class="form-section">
-        <div class="panel-card">
-          <h2 id="form-title">Add Expense</h2>
-          <p class="panel-subtitle">Log your spending details below</p>
-          
-          <form id="expense-form" novalidate>
-            <input type="hidden" id="expense-id">
-            
-            <div class="form-group">
-              <label for="expense-description">Description</label>
-              <div class="input-wrapper">
-                <i data-lucide="file-text" class="input-icon"></i>
-                <input type="text" id="expense-description" placeholder="e.g. Weekly Grocery Run" required>
-              </div>
+      <!-- Main Content Canvas -->
+      <main class="main-content">
+
+        <!-- Breadcrumbs & View Header -->
+        <div class="content-header">
+          <nav class="breadcrumb" id="breadcrumb-nav">
+            <span class="breadcrumb-active">Dashboard</span>
+          </nav>
+          <div class="content-header-row">
+            <h2 class="workspace-main-title" id="workspace-main-title">Select a workspace</h2>
+            <div class="header-actions" id="header-actions">
+              <!-- Dynamic action buttons -->
             </div>
+          </div>
+        </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label for="expense-amount">Amount ($)</label>
-                <div class="input-wrapper">
-                  <i data-lucide="dollar-sign" class="input-icon"></i>
-                  <input type="number" id="expense-amount" placeholder="0.00" step="0.01" min="0.01" required>
+        <!-- Wallet Banner (visible in File scope) -->
+        <div id="wallet-banner" class="wallet-banner hidden">
+          <div class="wallet-banner-inner">
+            <div class="wallet-card">
+              <div class="wallet-header">
+                <div>
+                  <h2 class="wallet-scope-name" id="wallet-scope-name">Wallet</h2>
+                  <p class="wallet-amounts">
+                    <span id="wallet-spent-val">$0.00</span>
+                    <span class="limit">/ <span id="wallet-limit-val">$0.00</span> Limit</span>
+                  </p>
                 </div>
+                <span id="wallet-badge-el" class="wallet-badge wallet-badge-safe">Safe</span>
               </div>
-
-              <div class="form-group">
-                <label for="expense-category">Category</label>
-                <div class="input-wrapper">
-                  <i data-lucide="tag" class="input-icon"></i>
-                  <select id="expense-category" required>
-                    <option value="" disabled selected>Select category</option>
-                    <option value="Food">Food & Dining</option>
-                    <option value="Shopping">Shopping</option>
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Utilities">Utilities & Bills</option>
-                    <option value="Transport">Transportation</option>
-                    <option value="Health">Health & Fitness</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
+              <div class="progress-bar">
+                <div id="wallet-progress-fill" class="progress-fill progress-fill-safe" style="width: 0%;"></div>
               </div>
-            </div>
-
-            <div class="form-group">
-              <label for="expense-date">Date</label>
-              <div class="input-wrapper">
-                <i data-lucide="calendar" class="input-icon"></i>
-                <input type="date" id="expense-date" required>
-              </div>
-            </div>
-
-            <div class="button-group">
-              <button type="submit" id="submit-btn" class="btn btn-primary">
-                <i data-lucide="plus-circle"></i> Save Expense
-              </button>
-              <button type="button" id="cancel-btn" class="btn btn-secondary hidden">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- Right Side: Transactions Feed -->
-      <section class="list-section">
-        <div class="panel-card feed-card">
-          <div class="feed-header">
-            <div>
-              <h2>Transactions</h2>
-              <p class="panel-subtitle" id="feed-subtitle">Showing all transactions</p>
-            </div>
-            
-            <div class="feed-controls">
-              <div class="filter-wrapper">
-                <label for="filter-category" class="sr-only">Filter Category</label>
-                <select id="filter-category" class="select-sm">
-                  <option value="All">All Categories</option>
-                  <option value="Food">Food & Dining</option>
-                  <option value="Shopping">Shopping</option>
-                  <option value="Entertainment">Entertainment</option>
-                  <option value="Utilities">Utilities & Bills</option>
-                  <option value="Transport">Transportation</option>
-                  <option value="Health">Health & Fitness</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div class="sort-wrapper">
-                <label for="sort-by" class="sr-only">Sort By</label>
-                <select id="sort-by" class="select-sm">
-                  <option value="date-desc">Newest First</option>
-                  <option value="date-asc">Oldest First</option>
-                  <option value="amount-desc">Highest Amount</option>
-                  <option value="amount-asc">Lowest Amount</option>
-                </select>
+              <div class="wallet-footer">
+                <span id="wallet-spent-label">Spent: $0.00</span>
+                <span class="wallet-remaining" id="wallet-remaining-label">Remaining: $0.00</span>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Expenses List Container -->
-          <div class="transactions-list" id="transactions-list">
-            <!-- Dynamically populated via Javascript -->
-            <div class="empty-state">
-              <div class="empty-icon"><i data-lucide="inbox"></i></div>
-              <p>No transactions logged yet. Start by filling the form!</p>
-            </div>
+        <!-- Scrollable Content Area -->
+        <div class="workspace-canvas custom-scrollbar" id="workspace-canvas">
+          <div class="dynamic-content" id="dynamic-content-area">
+            <!-- Dynamic content filled by JS -->
           </div>
         </div>
-      </section>
 
+        <!-- Quick Entry Bar (File scope only) -->
+        <div id="quick-entry-bar" class="quick-entry-bar hidden">
+          <div class="quick-entry-inner">
+            <input id="quick-expense-input" class="quick-entry-input" placeholder="Add expense (e.g. 15.00 Coffee)" type="text" onkeydown="if(event.key==='Enter')quickAddExpense()">
+            <button onclick="quickAddExpense()" class="quick-entry-send">
+              <span class="material-symbols-outlined">arrow_upward</span>
+            </button>
+          </div>
+          <p class="quick-entry-hint">Aware parses amount + description automatically.</p>
+        </div>
+
+        <!-- FAB for full Expense Form -->
+        <button id="btn-add-expense-fab" onclick="openExpenseModal()" class="fab hidden">
+          <span class="material-symbols-outlined">add</span>
+        </button>
+
+      </main>
+    </div>
+
+    <!-- Bottom Navigation Bar (Mobile Only) -->
+    <nav class="bottom-nav">
+      <div onclick="switchBottomTab('ledger')" id="bnav-ledger" class="bnav-item active">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <span>Ledger</span>
+      </div>
+      <div onclick="switchBottomTab('wallet')" id="bnav-wallet" class="bnav-item">
+        <span class="material-symbols-outlined">payments</span>
+        <span>Wallet</span>
+      </div>
+      <div onclick="switchBottomTab('history')" id="bnav-history" class="bnav-item">
+        <span class="material-symbols-outlined">history</span>
+        <span>History</span>
+      </div>
+      <div onclick="switchBottomTab('settings')" id="bnav-settings" class="bnav-item">
+        <span class="material-symbols-outlined">settings</span>
+        <span>Settings</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       EXPENSE FULL-PAGE FORM MODAL
+       ═══════════════════════════════════════════════════════ -->
+  <div id="modal-expense" class="modal-expense hidden">
+    <!-- Header -->
+    <header class="modal-expense-header">
+      <div class="modal-expense-header-left">
+        <button onclick="closeExpenseModal()" class="btn-icon">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+        <h1 class="font-h2" id="expense-modal-title">New Expense</h1>
+      </div>
+      <button onclick="saveExpenseSubmit()" class="btn btn-primary btn-sm">Save</button>
+    </header>
+
+    <!-- Body -->
+    <main class="modal-expense-body">
+      <input type="hidden" id="expense-id">
+
+      <!-- Left Column: Amount Numpad + Categories -->
+      <div class="expense-modal-left">
+        <!-- Numpad Section -->
+        <section class="numpad-section">
+          <div class="form-group">
+            <label class="font-label">Transaction Amount</label>
+          </div>
+          <div class="numpad-amount-display">
+            <span class="currency">$</span>
+            <input class="numpad-amount-input" id="expense-amount" readonly type="text" value="0.00">
+          </div>
+          <div class="numpad-grid">
+            <button class="numpad-key" onclick="pressNumpad('1')">1</button>
+            <button class="numpad-key" onclick="pressNumpad('2')">2</button>
+            <button class="numpad-key" onclick="pressNumpad('3')">3</button>
+            <button class="numpad-key" onclick="pressNumpad('4')">4</button>
+            <button class="numpad-key" onclick="pressNumpad('5')">5</button>
+            <button class="numpad-key" onclick="pressNumpad('6')">6</button>
+            <button class="numpad-key" onclick="pressNumpad('7')">7</button>
+            <button class="numpad-key" onclick="pressNumpad('8')">8</button>
+            <button class="numpad-key" onclick="pressNumpad('9')">9</button>
+            <button class="numpad-key" onclick="pressNumpad('.')">.</button>
+            <button class="numpad-key" onclick="pressNumpad('0')">0</button>
+            <button class="numpad-key" onclick="pressNumpad('backspace')">
+              <span class="material-symbols-outlined">backspace</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Category Chips -->
+        <section class="category-section">
+          <div class="form-group">
+            <label class="font-label">Expense Category</label>
+          </div>
+          <div class="category-grid" id="expense-category-chips">
+            <div class="category-chip active" onclick="selectCategoryChip('Food')" data-cat="Food">
+              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+              <span>Dining</span>
+            </div>
+            <div class="category-chip" onclick="selectCategoryChip('Shopping')" data-cat="Shopping">
+              <span class="material-symbols-outlined">shopping_bag</span>
+              <span>Retail</span>
+            </div>
+            <div class="category-chip" onclick="selectCategoryChip('Transport')" data-cat="Transport">
+              <span class="material-symbols-outlined">commute</span>
+              <span>Travel</span>
+            </div>
+            <div class="category-chip" onclick="selectCategoryChip('Utilities')" data-cat="Utilities">
+              <span class="material-symbols-outlined">receipt_long</span>
+              <span>Bills</span>
+            </div>
+            <div class="category-chip" onclick="selectCategoryChip('Health')" data-cat="Health">
+              <span class="material-symbols-outlined">health_and_safety</span>
+              <span>Health</span>
+            </div>
+            <div class="category-chip" onclick="selectCategoryChip('Other')" data-cat="Other">
+              <span class="material-symbols-outlined">more_horiz</span>
+              <span>Other</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column: Date, Reference, Notes -->
+      <aside class="expense-modal-right expense-details-aside">
+        <div class="expense-details-card">
+          <div class="form-group">
+            <label class="font-label">Date & Time</label>
+            <input class="form-input-plain" id="expense-datetime" type="datetime-local">
+          </div>
+          <div class="form-group">
+            <label class="font-label">Ledger Reference</label>
+            <div class="expense-ref-box">
+              <span class="material-symbols-outlined">folder</span>
+              <div>
+                <div class="expense-ref-name" id="expense-ref-name">Current File</div>
+                <div class="expense-ref-parent" id="expense-ref-parent">Selected Ledger</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="font-label">Notes (Optional)</label>
+            <textarea id="expense-desc" class="form-textarea" placeholder="What was this for?"></textarea>
+          </div>
+        </div>
+      </aside>
     </main>
 
-    <footer class="app-footer-nav">
-      <p>&copy; 2026 Spendy Expense Tracker. Powered by clean Node.js and premium Vanilla CSS.</p>
+    <!-- Mobile bottom save bar -->
+    <footer class="expense-mobile-footer">
+      <button onclick="closeExpenseModal()" class="btn btn-outline" style="flex: 1;">Cancel</button>
+      <button onclick="saveExpenseSubmit()" class="btn btn-dark" style="flex: 2;">Save Expense</button>
     </footer>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════
+       FOLDER CREATION / EDITING DIALOG
+       ═══════════════════════════════════════════════════════ -->
+  <div id="modal-folder" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 class="modal-title" id="folder-modal-title">Create Folder</h3>
+      <form onsubmit="handleFolderSubmit(event)">
+        <input type="hidden" id="modal-folder-id">
+        <div class="form-group">
+          <label class="font-label">Folder Name</label>
+          <input type="text" id="modal-folder-name" required placeholder="e.g. Travel Projects" class="form-input-plain">
+        </div>
+        <div class="form-group">
+          <label class="font-label">Wallet Limit ($) <span style="font-size: 10px; color: var(--text-muted); text-transform: none; letter-spacing: 0;">(Optional)</span></label>
+          <div style="position: relative;">
+            <span class="dollar-prefix">$</span>
+            <input type="number" id="modal-folder-wallet" placeholder="e.g. 5000" step="0.01" min="0" class="form-input-plain form-input-dollar">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" onclick="closeFolderModal()" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       FILE CREATION / EDITING DIALOG
+       ═══════════════════════════════════════════════════════ -->
+  <div id="modal-file" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 class="modal-title" id="file-modal-title">Create File</h3>
+      <form onsubmit="handleFileSubmit(event)">
+        <input type="hidden" id="modal-file-id">
+        <input type="hidden" id="modal-file-folder-id">
+        <div class="form-group">
+          <label class="font-label">File Name</label>
+          <input type="text" id="modal-file-name" required placeholder="e.g. Tokyo Trip" class="form-input-plain">
+        </div>
+        <div class="form-group">
+          <label class="font-label">Wallet Limit ($) <span style="font-size: 10px; color: var(--text-muted); text-transform: none; letter-spacing: 0;">(Optional)</span></label>
+          <div style="position: relative;">
+            <span class="dollar-prefix">$</span>
+            <input type="number" id="modal-file-wallet" placeholder="e.g. 3000" step="0.01" min="0" class="form-input-plain form-input-dollar">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" onclick="closeFileModal()" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       WALLET LIMIT EDIT MODAL
+       ═══════════════════════════════════════════════════════ -->
+  <div id="modal-wallet" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 class="modal-title">Set Wallet Limit</h3>
+      <p class="modal-subtitle">Define your maximum budget for the <strong id="wallet-modal-scope-name">current</strong> ledger.</p>
+      <div class="form-group">
+        <label class="font-label">New Limit Amount</label>
+        <div style="position: relative;">
+          <span class="dollar-prefix">$</span>
+          <input type="number" id="wallet-modal-limit" step="0.01" min="0" class="form-input-plain form-input-dollar" value="0">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button onclick="closeWalletModal()" class="btn btn-outline">Cancel</button>
+        <button onclick="saveWalletLimit()" class="btn btn-primary">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
   <script src="app.js"></script>
   <script>
-    // Initialize Lucide icons on page load
-    lucide.createIcons();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(reg => {
+          reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === 'activated') {
+                window.location.reload();
+              }
+            };
+          };
+        })
+        .catch(err => {
+          console.error('Service worker registration failed:', err);
+        });
+    }
+
+    // Clear old caches programmatically
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          if (name !== 'aware-cache-v3') {
+            caches.delete(name).then(() => {
+              console.log('Cleared old cache:', name);
+              window.location.reload();
+            });
+          }
+        });
+      });
+    }
   </script>
+
 </body>
 </html>
