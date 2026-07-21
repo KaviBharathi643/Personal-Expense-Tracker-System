@@ -6,6 +6,7 @@ data/expenses.json
 
 # Environment variables
 .env
+.env.enc
 
 # Log files
 npm-debug.log*

@@ -220,6 +220,14 @@
           </nav>
         </div>
 
+        <!-- Install App Banner (Hidden by default) -->
+        <div id="install-banner" class="hidden" style="padding: var(--space-md); border-top: 1px solid var(--border); background: var(--bg-surface-alt);">
+          <button id="btn-install-app" class="btn btn-primary btn-full btn-sm">
+            <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+            Install App
+          </button>
+        </div>
+
         <!-- Profile Footer -->
         <div class="sidebar-footer">
           <div class="profile-footer">
@@ -539,7 +547,7 @@
     if ('caches' in window) {
       caches.keys().then(names => {
         names.forEach(name => {
-          if (name !== 'aware-cache-v3') {
+          if (name !== 'aware-cache-v4') {
             caches.delete(name).then(() => {
               console.log('Cleared old cache:', name);
               window.location.reload();

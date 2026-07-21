@@ -2,9 +2,35 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const dotenv = require('dotenv');
+
+const envPath = path.join(__dirname, '../.env');
+const envEncPath = path.join(__dirname, '../.env.enc');
+
+dotenv.config({ path: envPath });
+
+if (fs.existsSync(envEncPath)) {
+  const envEncContent = fs.readFileSync(envEncPath, 'utf8');
+  for (const line of envEncContent.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex === -1) continue;
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const value = trimmed.slice(separatorIndex + 1).trim();
+
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+}
+
 const db = require('./database');
 
 const app = express();
@@ -13,10 +39,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'aware_secure_jwt_secret_key_103535
 
 // Mail transporter config
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: process.env.MAILER_SERVICE || 'gmail',
   auth: {
-    user: 'employeepayroll.workforce@gmail.com',
-    pass: 'ihaerjiqgydiccea'
+    user: process.env.MAILER_USER || 'employeepayroll.workforce@gmail.com',
+    pass: process.env.MAILER_PASS || ''
   }
 });
 

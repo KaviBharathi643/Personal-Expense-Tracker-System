@@ -12,6 +12,7 @@ let numpadVal = '0.00';
 let forgotStep = 1;
 let forgotEmail = '';
 let forgotOtp = '';
+let deferredPrompt = null;
 
 let collapsedFolders = {};
 try {
@@ -33,6 +34,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   checkAuth();
+
+  // PWA Install Button handler
+  const btnInstallApp = document.getElementById('btn-install-app');
+  if (btnInstallApp) {
+    btnInstallApp.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User choice: ${outcome}`);
+      deferredPrompt = null;
+      const installBanner = document.getElementById('install-banner');
+      if (installBanner) installBanner.classList.add('hidden');
+    });
+  }
+});
+
+// PWA Install Event listeners
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const installBanner = document.getElementById('install-banner');
+  if (installBanner) {
+    installBanner.classList.remove('hidden');
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('Aware app installed.');
+  const installBanner = document.getElementById('install-banner');
+  if (installBanner) installBanner.classList.add('hidden');
 });
 
 // ════════════════════════════════════════════════
