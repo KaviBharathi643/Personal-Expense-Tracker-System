@@ -35,14 +35,14 @@ const db = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'aware_secure_jwt_secret_key_103535';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Mail transporter config
 const transporter = nodemailer.createTransport({
-  service: process.env.MAILER_SERVICE || 'gmail',
+  service: process.env.MAILER_SERVICE,
   auth: {
-    user: process.env.MAILER_USER || 'employeepayroll.workforce@gmail.com',
-    pass: process.env.MAILER_PASS || ''
+    user: process.env.MAILER_USER,
+    pass: process.env.MAILER_PASS
   }
 });
 
@@ -153,7 +153,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
     // Send Mail
     const mailOptions = {
-      from: '"Aware Assistant" <employeepayroll.workforce@gmail.com>',
+      from: `"Aware Assistant" <${process.env.MAILER_USER}>`,
       to: email,
       subject: 'Aware Password Reset OTP Verification Code',
       html: `
